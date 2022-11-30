@@ -7321,7 +7321,7 @@ do
             end
             textbox.setText = function(self, newText) 
                 self.instances.textBox.Text = tostring(newText)
-                self:fireEvent('onTextChange', newText)
+                self:fireEvent('onFocusLost', newText)
             end
             
             
