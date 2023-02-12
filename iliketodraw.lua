@@ -4869,4 +4869,3 @@ function library:CreateSettingsTab(menu)
 end
 
 getgenv().library = library
-return library
