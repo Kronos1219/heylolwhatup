@@ -1,5 +1,5 @@
 -- DOLLARWARE UI LIBRARY
--- MADE BY TOPIT | dropdown added by LeadMarker
+-- MADE BY TOPIT | Other stuff added by @leadmarker
 
 -- warning: comments are mostly retarded / useless
 -- some shit makes no sense but idc enough to fix it
@@ -1377,65 +1377,87 @@ do
             window.getSize = function(self, targetSize) 
                 return targetSize and self.size or self.instances.mainFrame.Size
             end
-            
-            window.saveConfig = function(self)
-                local folder, config = window.getConfigs(savefolder), {}
-                if table.find(folder, savefolder .. '\\' .. self .. '.json') then 
-                    config = game:GetService('HttpService'):JSONDecode(readfile(savefolder .. '\\' .. self .. '.json'))
+
+            window.save_config = function()
+                local folder = 'Monke Hub'
+                if (not isfolder(folder)) then 
+                    makefolder(folder)
                 end
+
+                if (not isfolder(folder .. '\\' .. game.GameId)) then 
+                    makefolder(folder .. '\\' .. game.GameId)
+                end
+
+                if (not isfile(folder .. '\\' .. game.GameId .. '\\config.json')) then 
+                    writefile(folder .. '\\' .. game.GameId .. '\\config.json', '{}')
+                end
+
+                local config = folder .. '\\' .. game.GameId .. '\\config.json'
+                local data = {}
+            
+                for i, v in pairs(ui.flags) do 
+                    local type = rawget(v, 'type')
+                    local name = rawget(v, 'name')
+            
+                    if (type == 'toggle' and rawget(v, 'toggled') == nil) then 
+                        data[name] = false 
+                    elseif (type == 'toggle' and rawget(v, 'toggled') ~= nil) then 
+                        data[name] = v.toggled
+                    end
+            
+                    if (type == 'slider') then 
+                        data[name] = v.value
+                    end
+            
+                    if (type == 'textbox' and rawget(v, 'text') == 'textbox') then 
+                        data[name] = name 
+                    elseif (type == 'textbox' and rawget(v, 'text') ~= nil) then 
+                        data[name] = v.text
+                    end
+            
+                    if (type == 'dropdown' and rawget(v, 'option') == '') then 
+                        data[name] = 'nil'
+                    elseif (type == 'dropdown' and rawget(v, 'option') ~= '') then 
+                        data[name] = v.option
+                    end
                 
-                for i,v in next, ui.flags do 
-                    if v.type == 'toggle' then 
-                        config[v.name] = v.toggled
-                    elseif v.type == 'dropdown' then 
-                        config[v.name] = v.option
-                    elseif v.type == 'slider' then 
-                        config[v.name] = v.value
-                    elseif v.type == 'colorpicker' then 
-                        local color = v.color
-                        config[v.name] =  {color['R'], color['G'], color['B']}
-                    elseif v.type == 'textbox' then 
-                        config[v.name] = v.text
-                    elseif v.type == 'keybind' and v.key ~= nil then 
-                        local key = v.key.Name
-                        config[v.name] = key
-                    elseif v.type == 'multidrop' then 
-                        config[v.name] = v.dropList
+                    if (type == 'multidrop' and #v.dropList > 0) then 
+                        data[name] = v.dropList
                     end
                 end
-                
-                writefile(savefolder .. '\\' .. self .. '.json', game:GetService('HttpService'):JSONEncode(config))
-            end  
-        
-            window.loadConfig = function(self)
-                local folder, config = window.getConfigs(savefolder), {}
-                if table.find(folder, savefolder .. '\\' .. self .. '.json') then 
-                    config = game:GetService('HttpService'):JSONDecode(readfile(savefolder .. '\\' .. self .. '.json'))
-                end
-                
-                for i,v in next, ui.flags do 
-                    if v.type == 'toggle' then 
+            
+                writefile(config, game:GetService('HttpService'):JSONEncode(data))
+                return data
+            end
+
+            window.load_config = function()
+                local folder = 'Monke Hub'
+                local config = game:GetService('HttpService'):JSONDecode(readfile(folder .. '\\' .. game.GameId .. '\\config.json'))
+            
+                for i, v in pairs(ui.flags) do 
+                    local type = rawget(v, 'type')
+            
+                    if (type == 'toggle') then 
                         v:toggle(config[v.name])
-                    elseif v.type == 'dropdown' then 
-                        v:selectOption(config[v.name])
-                    elseif v.type == 'slider' then 
+                    end
+            
+                    if (type == 'slider') then 
                         v:setValue(config[v.name])
-                    elseif v.type == 'colorpicker' then 
-                        local color = config[v.name]
-                        v:setColor(Color3.new(color[1], color[2], color[3]))                        
-                    elseif v.type == 'textbox' then 
+                    end
+            
+                    if (type == 'textbox') then 
                         v:setText(config[v.name])
-                    elseif v.type == 'keybind' then 
-                        v:setHotkey(config[v.name])
-                    elseif v.type == 'multidrop' then 
+                    end
+            
+                    if (type == 'dropdown' and config[v.name] == 'nil') then 
+                        v:setText(v.name)
+                    elseif (type == 'dropdown' and config[v.name] ~= 'nil') then 
+                        v:selectOption(config[v.name])
+                    end
+            
+                    if (type == 'multidrop' and config[v.name] ~= nil) then 
                         v:selectOptions(config[v.name])
                     end
-                end
-            end
-            
-            window.getConfigs = function(self)
-                if isfolder(self) then 
-                    return listfiles(self) 
                 end
             end
             
@@ -5305,7 +5327,6 @@ do
         -- add class
         label.section = section
     end
-    
     -- Sector
     do 
         local sector = {} do
@@ -5380,7 +5401,6 @@ do
         elemClasses.sector = sector
     end
 
-    -- Unfinished
     -- DROPDOWN
     do 
         local dropdown = {} do 
@@ -5629,7 +5649,9 @@ do
                 return main
             end
             
-            dropdown.clearText = function(self)
+            dropdown.setText = function(self, text)
+                local control = self.instances.controlFrame
+                control['#click-sensor']['#button']['#label'].Text = text
             end
             
             dropdown.selectOption = function(self, option)
@@ -5640,17 +5662,11 @@ do
                 
                 self:fireEvent('optionClick', option)
                 self.openState = false
-                dropdown.option = option
+                self.option = option
                 self:close()
             end
             
             dropdown.getOptions = function(self)
-                -- for i,v in pairs(self.instances.menu:GetChildren()) do 
-                --     if v.Name == '#click-sensor' then 
-                --         -- options['clickSensor'] = v
-                --         print(i,v)
-                --     end
-                -- end
                 return self.instances.menu
             end
             
@@ -5727,7 +5743,7 @@ do
                     clickSensor.MouseButton1Click:Connect(function()
                         ops:click()
                         ops:fireEvent('optionClick', self)
-                        dropdown.option = self
+                        ops.option = self
                         
                         ops.instances.label.Text = ops.name .. ': ' .. self
                     end)
@@ -5840,12 +5856,6 @@ do
                 new.instances.controlFrame.Parent = self.instances.controlMenu
             
                 new:setOptions(s_options)
-                
-                -- for i,v in next, all_options:GetChildren() do 
-                --     if v.Name == '#click-sensor' then 
-                --         print(v['#button']['#label'].Text)
-                --     end
-                -- end
                 
                 if (typeof(callback) == 'function') then
                     new:bindToEvent('optionClick', callback)
@@ -6019,7 +6029,6 @@ do
                 multidropdown.instances = instances 
             end
             
-            multidropdown.dropList = {}
             multidropdown.focused = false
             multidropdown.openState = false
             
@@ -6098,17 +6107,16 @@ do
                 self.options = newOptions
             end
             
-            multidropdown.refresh = function(main, self)
-                main.openState = false
-                main:close()
+            multidropdown.refresh = function(self, main)
+                self.openState = false
+                self:close()
                 
-                main:setOptions(self)
+                self:setOptions(main)
                 
-                return main
+                return self
             end
             
             multidropdown.selectOption = function(self, option)
-                print(option)
                 self.multitoggle[option] = true
                 local menu, clickSensor, button = self.instances.menu
                 
@@ -6135,18 +6143,13 @@ do
             end
             
             multidropdown.getOptions = function(self)
-                -- for i,v in pairs(self.instances.menu:GetChildren()) do 
-                --     if v.Name == '#click-sensor' then 
-                --         -- options['clickSensor'] = v
-                --         print(i,v)
-                --     end
-                -- end
                 return self.instances.menu
             end
             
-            multidropdown.multitoggle = {}
-            
-            multidropdown.addOption = function(ops, self)
+            multidropdown.addOption = function(self, ops)
+                self.dropList = {}
+                self.multitoggle = {}
+
                 local clickSensor = Instance.new('TextButton') do 
                     clickSensor.BackgroundTransparency = 1
                     clickSensor.Name = '#click-sensor'
@@ -6155,7 +6158,7 @@ do
                     clickSensor.TextTransparency = 1
                     clickSensor.ZIndex = 34
                     
-                    clickSensor.Parent = ops.instances.controlFrame['#menu']
+                    clickSensor.Parent = self.instances.controlFrame['#menu']
                     
                     local button = Instance.new('Frame') do 
                         button.Active = true
@@ -6192,7 +6195,7 @@ do
                             label.Name = '#label'
                             label.RichText = true
                             label.Size = UDim2.fromScale(1, 1)
-                            label.Text = self
+                            label.Text = ops
                             label.TextColor3 = theme.TextPrimary
                             label.TextSize = 14
                             label.TextStrokeColor3 = theme.TextStroke
@@ -6208,52 +6211,48 @@ do
                         end
                     end
                     
-                    ops.multitoggle[self] = false
+                    self.multitoggle[ops] = false
                     
                     clickSensor.MouseEnter:Connect(function()
-                        if not ops.multitoggle[self] then 
+                        if not self.multitoggle[ops] then 
                             tween(clickSensor['#button']['#stroke'], {Color = theme.StrokeHover}, 0.2, 1)
                         end
                     end)
                     
                     clickSensor.MouseLeave:Connect(function()
-                        if not ops.multitoggle[self] then 
+                        if not self.multitoggle[ops] then 
                             tween(clickSensor['#button']['#stroke'], {Color = theme.Stroke}, 0.2, 1)
                         end
                     end)
                     
 
                     clickSensor.MouseButton1Click:Connect(function()
-                        if not ops.multitoggle[self] then 
-                            ops:fireEvent('optionClick', self)
+                        if not self.multitoggle[ops] then 
                             tween(button, {BackgroundColor3 = theme.Button4}, 0.2, 1)
                             tween(clickSensor['#button']['#stroke'], {Color = theme.StrokeHover}, 0.2, 1)
                             
-                            ops.dropList[#ops.dropList + 1] = self
+                            table.insert(self.dropList, ops)
                         else
-                            ops:fireEvent('optionUnClick', self)
                             tween(button, {BackgroundColor3 = theme.Button2}, 0.2, 1)
                             tween(clickSensor['#button']['#stroke'], {Color = theme.Stroke}, 0.2, 1)
-                            table.remove(ops.dropList, table.find(ops.dropList, self))
+                            table.remove(self.dropList, table.find(self.dropList, ops))
                         end
                         
-                        ops.multitoggle[self] = not ops.multitoggle[self]
-                        ops:fireEvent('optionClick', ops.dropList)
+                        self.multitoggle[ops] = not self.multitoggle[ops]
+                        self:fireEvent('optionClick', self.dropList)
                     end)
                 end
             end
             
-            multidropdown.removeOption = function(option, self)
-                for i,v in pairs(option:getOptions():GetChildren()) do
+            multidropdown.removeOption = function(self, option)
+                for i,v in pairs(self:getOptions():GetChildren()) do
                     if v.Name == '#click-sensor' then 
-                        if v['#button']['#label'].Text == self then 
+                        if v['#button']['#label'].Text == option then 
                             v:Destroy()
                         end
                     end
                 end
             end
-            
-            
             
             multidropdown.click = function(self) 
                 self.openState = not self.openState
@@ -6350,11 +6349,6 @@ do
             
                 new:setOptions(s_options)
                 
-                -- for i,v in next, all_options:GetChildren() do 
-                --     if v.Name == '#click-sensor' then 
-                --         print(v['#button']['#label'].Text)
-                --     end
-                -- end
                 
                 if (typeof(callback) == 'function') then
                     new:bindToEvent('optionClick', callback)
@@ -7280,6 +7274,7 @@ do
                         obj.focused = true
                         --obj:showHint()
                         obj.textUpdCn = inst:GetPropertyChangedSignal('Text'):Connect(function() 
+                            obj.text = inst.Text
                             obj:fireEvent('onTextChange', inst.Text)
                             obj:fireEvent('__txtUpdInternal', inst.Text)
                         end)
@@ -7569,7 +7564,7 @@ do
 
                 new.section = self 
                 new.name = s_title
-                new.text = textbox.text
+                new.text = new:getText()
                 new.type = 'textbox'
                 table.insert(self.controls, new)
                 table.insert(ui.flags, new)
@@ -8411,5 +8406,4 @@ do
     end
 end
 
-
-return ui 
+return ui
